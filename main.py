@@ -6,6 +6,7 @@ import requests
 class SpeedTyper(customtkinter.CTk):
     def __init__(self):
         super().__init__()
+        self.counter_value = None
         self.text = None
         self.char_index = 0
         self.geometry('750x500')
@@ -23,12 +24,16 @@ class SpeedTyper(customtkinter.CTk):
         self.text_box.grid(row=2, column=0, columnspan=4, pady=10, sticky='ew',
                            padx=50)  # Add some padding and make it sticky
 
+        self.counter_label = customtkinter.CTkLabel(self, text='Seconds: 0', font=('Verdana', 16))
+        self.counter_label.grid(row=0, column=3, columnspan=2, pady=10, padx=50,
+                                sticky='e')  # Add some padding and make it sticky
+
         self.button_one = customtkinter.CTkButton(self, text='get text', command=self.generate_paragraph)
-        self.button_one.grid(row=3, column=0, columnspan=2, pady=10, padx=50,
+        self.button_one.grid(row=4, column=0, columnspan=2, pady=10, padx=50,
                              sticky='w')  # Add some padding and make it sticky
 
         self.button_two = customtkinter.CTkButton(self, text='button two')
-        self.button_two.grid(row=3, column=2, columnspan=2, pady=10, padx=50,
+        self.button_two.grid(row=4, column=2, columnspan=2, pady=10, padx=50,
                              sticky='e')  # Add some padding and make it sticky
 
         self.bind('<Key>', self.update_text)
@@ -41,42 +46,46 @@ class SpeedTyper(customtkinter.CTk):
         self.char_index = 0
 
     def update_text(self, event):
-        if event.keycode == 8:
-            if self.char_index > 0:
-                # If backspace is pressed, replace the previous character with the character from self.text
-                self.char_index -= 1
-                replacement_char = self.text[self.char_index]
-                self.text_box.delete(f'1.{self.char_index}', f'1.{self.char_index + 1}')
-                self.text_box.insert(f'1.{self.char_index}', replacement_char)
-        elif event.keycode in [16, 20]:
-            pass
-        else:
-            # Get the typed character
-            char = event.char
+        if not self.is_running:
+            self.is_running = True
+            self.start_counter()
+        if self.char_index < len(self.text):
+            if event.keycode == 8:
+                if self.char_index > 0:
+                    # If backspace is pressed, replace the previous character with the character from self.text
+                    self.char_index -= 1
+                    replacement_char = self.text[self.char_index]
+                    self.text_box.delete(f'1.{self.char_index}', f'1.{self.char_index + 1}')
+                    self.text_box.insert(f'1.{self.char_index}', replacement_char)
+            elif event.keycode in [16, 20]:
+                pass
+            else:
+                # Get the typed character
+                char = event.char
 
-            # Get the current text in the text box without the newline character
-            test_text = self.text_box.get('1.0', 'end-1c')
+                # Get the current text in the text box without the newline character
+                test_text = self.text_box.get('1.0', 'end-1c')
 
-            # Check if the text is not empty and the char_index is within the bounds of the text
-            if self.char_index < len(test_text):
-                # Replace the character at self.char_index with the typed character
-                updated_text = test_text[:self.char_index] + char + test_text[self.char_index + 1:]
+                # Check if the text is not empty and the char_index is within the bounds of the text
+                if self.char_index < len(test_text):
+                    # Replace the character at self.char_index with the typed character
+                    updated_text = test_text[:self.char_index] + char + test_text[self.char_index + 1:]
 
-                # Update the text in the text box
-                self.text_box.delete('1.0', END)
-                self.text_box.insert(END, updated_text)
+                    # Update the text in the text box
+                    self.text_box.delete('1.0', END)
+                    self.text_box.insert(END, updated_text)
 
-                # Remove the 'white_text' tag from the previous character
-                self.text_box.tag_remove('white_text', f'1.{self.char_index}', f'1.{self.char_index + 1}')
+                    # Remove the 'white_text' tag from the previous character
+                    self.text_box.tag_remove('white_text', f'1.{self.char_index}', f'1.{self.char_index + 1}')
 
-                # Apply the white color to the entire text before the inserted character
-                self.text_box.tag_add('white_text', '1.0', f'1.{(self.char_index + 1)}')
-                self.text_box.tag_config('white_text', foreground='white')
+                    # Apply the white color to the entire text before the inserted character
+                    self.text_box.tag_add('white_text', '1.0', f'1.{(self.char_index + 1)}')
+                    self.text_box.tag_config('white_text', foreground='white')
 
-                # Increment the char_index
-                self.char_index += 1
+                    # Increment the char_index
+                    self.char_index += 1
 
-                self.check_match()
+                    self.check_match()
 
     def check_match(self):
         text_box_content = self.text_box.get('1.0', 'end-1c')
@@ -91,7 +100,15 @@ class SpeedTyper(customtkinter.CTk):
                     self.text_box.tag_add(tag_name, f'1.{index}', f'1.{index + 1}')
                     self.text_box.tag_config(tag_name, foreground='red')
 
+    def start_counter(self):
+        self.counter_value = 0
+        self.update_counter()
 
+    def update_counter(self):
+        if self.is_running:
+            self.counter_value += 1
+            self.counter_label.configure(text=f'Seconds: {self.counter_value}')
+            self.after(1000, self.update_counter)
 
 
 if __name__ == '__main__':
